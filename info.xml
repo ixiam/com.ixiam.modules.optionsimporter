@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<extension key="com.ixiam.modules.optionsimporter" type="module">
+  <file>optionsimporter</file>
+  <name>Option Values Importer</name>
+  <description>Option Values Importer from CSV file for Custom Fields</description>
+  <license>AGPL</license>
+  <maintainer>
+    <author>Luciano Spiegel</author>
+    <email>l.spiegel@ixiam.com</email>
+  </maintainer>
+  <releaseDate>2012-10-18</releaseDate>
+  <version>0.1</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>4.2</ver>
+  </compatibility>
+  <comments>CiviCRM Extension to add Import Feature for Option Values in Custom Fields</comments>
+  <civix>
+    <namespace>CRM/Optionsimporter</namespace>
+  </civix>
+</extension>

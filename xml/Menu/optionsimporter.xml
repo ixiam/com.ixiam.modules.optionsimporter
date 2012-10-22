@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/admin/custom/group/field/import</path>
+    <page_callback>CRM_Optionsimporter_Form_OptionsImporter</page_callback>
+    <title>Import Option Values</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
