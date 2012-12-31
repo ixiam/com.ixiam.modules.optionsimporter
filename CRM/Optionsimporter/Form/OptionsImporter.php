@@ -34,6 +34,23 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 
 		// Get Option Group Id
 		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
+
+
+
+		// 		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
+		// //CRM_Core_Error::debug($results, $variable = null, $log = true, $html = true);
+		// $results2=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results["option_group_id"]));
+		// //CRM_Core_Error::debug($results2, $variable = null, $log = true, $html = true);
+		// foreach ($results2['values'] as $key => $value) {
+			
+		// 	CRM_Core_Error::debug($value['id'], $variable = null, $log = true, $html = true);
+		// 	//civicrm_api("OptionValue","update", array (version => '3','sequential' =>'1',  'id'=>$value["id"], 'label' =>"adios"));
+		// 	//$results=civicrm_api("OptionValue","delete", array (version => '3','sequential' =>'1', 'id' =>$value['id']));
+		// }
+
+
+
+
 		if(!isset($results["is_error"])){
 			$this->_ogid = $results["option_group_id"];
 		}
@@ -75,6 +92,14 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 
 		$this->addElement('text', 'fieldSeparator', ts('Import Field Separator'), array('size' => 2, 'maxlength' => 1));
 		$this->addElement('text', 'textEnclosure', ts('Field Text Enclosure'), array('size' => 1, 'maxlength' => 1));
+ 
+		
+			$overrideOptions["1"] = HTML_QuickForm::createElement('radio', null, ts("Don't check"), "Don't check", "1");
+			$overrideOptions["2"] = HTML_QuickForm::createElement('radio', null, ts('Skip Option'), "Skip Option", "2");
+			$overrideOptions["3"] = HTML_QuickForm::createElement('radio', null, ts('Overwrite Label'), "Overwrite Label", "3");
+		
+		$this->addGroup($overrideOptions, 'overrideimport', ts('If Option Value Exists'));
+		
 
 		$colOrder = array(self::VALUE_LABEL => ts("2 columns (value, label)"), self::LABEL_VALUE => ts("2 columns (label, value)"), self::VALUE => ts("only 1 column (label will be same as value)"));
 		$this->add('select', 'colOrder', ts('Columns Order'), $colOrder, TRUE);
@@ -101,6 +126,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		$defaults = array(
 			'fieldSeparator'=> $config->fieldSeparator,
 			'textEnclosure'	=> "'",
+			'overrideimport' => '2',
 		);
 
 		return $defaults;
@@ -120,7 +146,9 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		$separator 			= $this->controller->exportValue($this->_name, 'fieldSeparator');
 		$colOrder			= $this->controller->exportValue($this->_name, 'colOrder');
 		$fileName         	= $this->controller->exportValue($this->_name, 'uploadFile');
-		$textEnclosure     	= $this->controller->exportValue($this->_name, 'textEnclosure');		
+		$textEnclosure     	= $this->controller->exportValue($this->_name, 'textEnclosure');
+		$override_import    = $this->controller->exportValue($this->_name, 'overrideimport');
+
 
 		if(empty($separator)){
 			$config = CRM_Core_Config::singleton();
@@ -159,15 +187,14 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 			fgets($fd);
 			
 		while (($values = fgetcsv($fd, 8192, $separator)) !== FALSE) {
-			$this->_lineCount++;
 			if (CRM_Utils_System::isNull($values)) {
 				continue;
 			}
 			
 			$label = $value = "";
 			if ($colOrder == self::VALUE_LABEL){
-				$value = $this->_encloseAndTrim($values[0], $textEnclosure);
-				$label = $this->_encloseAndTrim($values[1], $textEnclosure);
+					$value = $this->_encloseAndTrim($values[0], $textEnclosure);
+					$label = $this->_encloseAndTrim($values[1], $textEnclosure);	
 			}
 			elseif ($colOrder == self::LABEL_VALUE){
 				$label = $this->_encloseAndTrim($values[0], $textEnclosure);
@@ -183,18 +210,83 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 				2.	API Doesn't sets the "normalized" name from label as in the Web Form UI (Users insert label not name in UI)
 				3.	If option value already exists API inserts it anyway. Should that be an error?
 			*/
-			$params	= array(
-						'version'			=> 3,
-						'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
-						'label'				=> $label,
-						'value'				=> $value,
-						'option_group_id' 	=> $this->_ogid,
-						'weight'			=> ++$weight,
-			);
-			$result = civicrm_api( "OptionValue", "Create", $params);
-			if(!$results["is_error"]){
-				$this->_lineError++;
+
+				/*Don't check*/
+			if ($override_import==1) { 
+				$this->_lineCount++;
+				$params	= array(
+							'version'			=> 3,
+							'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
+							'label'				=> $label,
+							'value'				=> $value,
+							'option_group_id' 	=> $this->_ogid,
+							'weight'			=> ++$weight,
+				);
+				$result = civicrm_api( "OptionValue", "Create", $params);
+				if(!$results["is_error"]){
+					$this->_lineError++;
+				}
 			}
+			/*Skip Option*/
+			if ($override_import==2) {
+					$results2 = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
+					$results3=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results2["option_group_id"]));
+					$norepetido=true;
+					foreach ($results3["values"] as $key => $value_comp) {
+						if($value_comp["value"]==$value){
+							$norepetido=false;
+						}
+					}
+				if($norepetido){
+					$this->_lineCount++;
+					$params	= array(
+								'version'			=> 3,
+								'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
+								'label'				=> $label,
+								'value'				=> $value,
+								'option_group_id' 	=> $this->_ogid,
+								'weight'			=> ++$weight,
+					);
+
+					$result = civicrm_api( "OptionValue", "Create", $params);
+						if(!$results["is_error"]){
+							$this->_lineError++;
+						}
+				}
+
+			}
+			/*Overwrite Label*/
+			if ($override_import==3) {
+				$results2 = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
+				$results3=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results2['option_group_id']));
+				$norepetido=true;
+				foreach ($results3["values"] as $key => $value_comp) {
+					if($value_comp["value"]==$value){
+						civicrm_api("OptionValue","update", array (version => '3','sequential' =>'1',  'id'=>$value_comp['id'], 'label' =>$label));
+						$norepetido=false;
+						$this->_lineUpdate++;
+					}
+
+				}			
+				if($norepetido){
+				$this->_lineCount++;
+				$params	= array(
+							'version'			=> 3,
+							'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
+							'label'				=> $label,
+							'value'				=> $value,
+							'option_group_id' 	=> $this->_ogid,
+							'weight'			=> ++$weight,
+				);
+				$result = civicrm_api( "OptionValue", "Create", $params);
+				}				
+					if(!$results["is_error"]){
+						$this->_lineError++;
+					}
+
+			}
+
+
 		}
 		fclose($fd);	
 
@@ -202,7 +294,9 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 			4. Would be nice to display a summary page here, right?
 		*/
 		$statusMsg = "Options Inserted:" . $this->_lineCount;
+		$statusMsg2 = "Options Updated:" . $this->_lineUpdate;
 		CRM_Core_Session::setStatus( $statusMsg, false );
+		CRM_Core_Session::setStatus( $statusMsg2, false );
 		CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm/admin/custom/group/field/option', "reset=1&action=browse&gid=". $this->_gid ."&fid=". $this->_fid ));		
 	}
 

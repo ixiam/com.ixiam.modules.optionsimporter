@@ -28,6 +28,10 @@
              <td class="label">{$form.colOrder.label}</td>
              <td>{$form.colOrder.html}</td>
          </tr>
+         <tr class="crm-import-datasource-form-block-fieldSeparator">
+             <td class="label">{$form.overrideimport.label}</td>
+             <td>{$form.overrideimport.html}</td>
+         </tr>
 	</table>
 
 	<div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"} </div>
