@@ -166,12 +166,12 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 			
 			$label = $value = "";
 			if ($colOrder == self::VALUE_LABEL){
-				$label = $this->_encloseAndTrim($values[0], $textEnclosure);
-				$value = $this->_encloseAndTrim($values[1], $textEnclosure);
-			}
-			elseif ($colOrder == self::LABEL_VALUE){
 				$value = $this->_encloseAndTrim($values[0], $textEnclosure);
 				$label = $this->_encloseAndTrim($values[1], $textEnclosure);
+			}
+			elseif ($colOrder == self::LABEL_VALUE){
+				$label = $this->_encloseAndTrim($values[0], $textEnclosure);
+				$value = $this->_encloseAndTrim($values[1], $textEnclosure);
 			}
 			elseif ($colOrder == self::VALUE){
 				$label = $value = $this->_encloseAndTrim($values[0], $textEnclosure);
