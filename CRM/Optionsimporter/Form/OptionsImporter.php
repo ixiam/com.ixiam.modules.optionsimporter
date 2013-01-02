@@ -34,7 +34,8 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 
 		$field_name = "";		
 		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-				if(!isset($results["is_error"])){
+		
+		if(!isset($results["is_error"])){
 			$this->_ogid = $results["option_group_id"];
 		}
 		else{
@@ -252,6 +253,8 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		/* ToDo:
 			4. Would be nice to display a summary page here, right?
 		*/
+		$this->_lineCount = ($this->_lineCount == NULL) ? 0 : $this->_lineCount;
+		$this->_lineUpdate = ($this->_lineUpdate == NULL) ? 0 : $this->_lineUpdate;
 		$statusMsg = "Options Inserted:" . $this->_lineCount . ", Options Updated:" . $this->_lineUpdate;
 		CRM_Core_Session::setStatus( $statusMsg, false );
 		CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm/admin/custom/group/field/option', "reset=1&action=browse&gid=". $this->_gid ."&fid=". $this->_fid ));		
