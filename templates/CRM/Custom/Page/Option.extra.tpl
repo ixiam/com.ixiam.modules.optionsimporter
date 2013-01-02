@@ -3,8 +3,6 @@
 	
 	url = '{crmURL p="civicrm/admin/custom/group/field/import" q=$querystring}';	
 	html = '<div class="action-link"><a href="' + url + '" class="button"><span><div class="icon add-icon"></div> Import Options</span></a></div>';
-	
+
 	cj('#access').before(html);
 </script> 
-
-

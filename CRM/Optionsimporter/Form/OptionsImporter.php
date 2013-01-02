@@ -3,7 +3,7 @@
 require_once 'CRM/Core/Form.php';
 
 class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
-	CONST VALUE_LABEL = 1, LABEL_VALUE = 2, VALUE = 3;
+	CONST VALUE_LABEL = 1, LABEL_VALUE = 2, VALUE = 3, NOT_CHECK =1 , SKIP_OPTION = 2, OVERWRITE_LABEL = 3;
 
 	protected $_gid;
 	protected $_ogid;
@@ -15,8 +15,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 	* @return void
 	* @access public
 	*/
-	function preProcess()
-	{	
+	function preProcess(){	
 		parent::preProcess();
 	}
 
@@ -30,28 +29,12 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		civicrm_initialize();
 		$this->_fid = CRM_Utils_Request::retrieve('fid', 'Positive', $this);
 		$this->_gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this);
-		$field_name = "";
+		
+		//Get group 
 
-		// Get Option Group Id
+		$field_name = "";		
 		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-
-
-
-		// 		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-		// //CRM_Core_Error::debug($results, $variable = null, $log = true, $html = true);
-		// $results2=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results["option_group_id"]));
-		// //CRM_Core_Error::debug($results2, $variable = null, $log = true, $html = true);
-		// foreach ($results2['values'] as $key => $value) {
-			
-		// 	CRM_Core_Error::debug($value['id'], $variable = null, $log = true, $html = true);
-		// 	//civicrm_api("OptionValue","update", array (version => '3','sequential' =>'1',  'id'=>$value["id"], 'label' =>"adios"));
-		// 	//$results=civicrm_api("OptionValue","delete", array (version => '3','sequential' =>'1', 'id' =>$value['id']));
-		// }
-
-
-
-
-		if(!isset($results["is_error"])){
+				if(!isset($results["is_error"])){
 			$this->_ogid = $results["option_group_id"];
 		}
 		else{
@@ -94,9 +77,9 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		$this->addElement('text', 'textEnclosure', ts('Field Text Enclosure'), array('size' => 1, 'maxlength' => 1));
  
 		
-			$overrideOptions["1"] = HTML_QuickForm::createElement('radio', null, ts("Don't check"), "Don't check", "1");
-			$overrideOptions["2"] = HTML_QuickForm::createElement('radio', null, ts('Skip Option'), "Skip Option", "2");
-			$overrideOptions["3"] = HTML_QuickForm::createElement('radio', null, ts('Overwrite Label'), "Overwrite Label", "3");
+			$overrideOptions[self::NOT_CHECK] = $this->createElement('radio', null, ts("Don't check"), "Don't check", self::NOT_CHECK);
+			$overrideOptions[self::SKIP_OPTION] = $this->createElement('radio', null, ts('Skip Option'), "Skip Option", self::SKIP_OPTION);
+			$overrideOptions[self::OVERWRITE_LABEL] = $this->createElement('radio', null, ts('Overwrite Label'), "Overwrite Label", self::OVERWRITE_LABEL);
 		
 		$this->addGroup($overrideOptions, 'overrideimport', ts('If Option Value Exists'));
 		
@@ -132,6 +115,19 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		return $defaults;
 	}
 
+	public function insertValue_customfield($value,$label,$weight){
+					$params	= array(
+								'version'			=> 3,
+								'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
+								'label'				=> $label,
+								'value'				=> $value,
+								'option_group_id' 	=> $this->_ogid,
+								'weight'			=> ++$weight,
+					);
+					$result = civicrm_api( "OptionValue", "Create", $params);
+					$this->_lineCount++;
+	}
+
 	/**
 	* process the form after the input has been submitted and validated
 	*
@@ -139,6 +135,8 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 	* @return None
 	*/
 	public function postProcess() {
+
+
 		civicrm_initialize();
 		require_once 'CRM/Utils/String.php';
 
@@ -211,92 +209,51 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 				3.	If option value already exists API inserts it anyway. Should that be an error?
 			*/
 
-				/*Don't check*/
-			if ($override_import==1) { 
-				$this->_lineCount++;
-				$params	= array(
-							'version'			=> 3,
-							'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
-							'label'				=> $label,
-							'value'				=> $value,
-							'option_group_id' 	=> $this->_ogid,
-							'weight'			=> ++$weight,
-				);
-				$result = civicrm_api( "OptionValue", "Create", $params);
-				if(!$results["is_error"]){
-					$this->_lineError++;
-				}
+			/*Not check*/
+			if ($override_import==self::NOT_CHECK) { 
+				$this->insertValue_customfield($value,$label,$weight);
 			}
+
 			/*Skip Option*/
-			if ($override_import==2) {
-					$results2 = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-					$results3=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results2["option_group_id"]));
-					$norepetido=true;
-					foreach ($results3["values"] as $key => $value_comp) {
+			if ($override_import==self::SKIP_OPTION) {
+					$values_cutom_field=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$this->_ogid));
+					$notexist=true;
+					CRM_Core_Error::debug($values_cutom_field, $variable = null, $log = true, $html = true);
+					foreach ($values_cutom_field["values"] as $key => $value_comp) {
 						if($value_comp["value"]==$value){
-							$norepetido=false;
+							$notexist=false;
+							break;
 						}
 					}
-				if($norepetido){
-					$this->_lineCount++;
-					$params	= array(
-								'version'			=> 3,
-								'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
-								'label'				=> $label,
-								'value'				=> $value,
-								'option_group_id' 	=> $this->_ogid,
-								'weight'			=> ++$weight,
-					);
-
-					$result = civicrm_api( "OptionValue", "Create", $params);
-						if(!$results["is_error"]){
-							$this->_lineError++;
-						}
+				if($notexist){
+					$this->insertValue_customfield($value,$label,$weight);
 				}
-
 			}
+
 			/*Overwrite Label*/
-			if ($override_import==3) {
-				$results2 = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-				$results3=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$results2['option_group_id']));
-				$norepetido=true;
-				foreach ($results3["values"] as $key => $value_comp) {
+			if ($override_import==self::OVERWRITE_LABEL) {
+				$values_cutom_field=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$this->_ogid));
+				$notexist=true;
+				foreach ($values_cutom_field["values"] as $key => $value_comp) {
 					if($value_comp["value"]==$value){
-						civicrm_api("OptionValue","update", array (version => '3','sequential' =>'1',  'id'=>$value_comp['id'], 'label' =>$label));
-						$norepetido=false;
+						civicrm_api("OptionValue","update", array (version => '3','sequential' =>'1', 'id'=>$value_comp['id'], 'label' =>$label));
+						$notexist=false;
 						$this->_lineUpdate++;
+						break;
 					}
-
 				}			
-				if($norepetido){
-				$this->_lineCount++;
-				$params	= array(
-							'version'			=> 3,
-							'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
-							'label'				=> $label,
-							'value'				=> $value,
-							'option_group_id' 	=> $this->_ogid,
-							'weight'			=> ++$weight,
-				);
-				$result = civicrm_api( "OptionValue", "Create", $params);
-				}				
-					if(!$results["is_error"]){
-						$this->_lineError++;
-					}
-
+				if($notexist){
+					$this->insertValue_customfield($value,$label,$weight);
+				}
 			}
-
-
 		}
 		fclose($fd);	
 
 		/* ToDo:
 			4. Would be nice to display a summary page here, right?
 		*/
-		$statusMsg = "Options Inserted:" . $this->_lineCount;
-		$statusMsg2 = "Options Updated:" . $this->_lineUpdate;
+		$statusMsg = "Options Inserted:" . $this->_lineCount . ", Options Updated:" . $this->_lineUpdate;
 		CRM_Core_Session::setStatus( $statusMsg, false );
-		CRM_Core_Session::setStatus( $statusMsg2, false );
 		CRM_Utils_System::redirect( CRM_Utils_System::url( 'civicrm/admin/custom/group/field/option', "reset=1&action=browse&gid=". $this->_gid ."&fid=". $this->_fid ));		
 	}
 
