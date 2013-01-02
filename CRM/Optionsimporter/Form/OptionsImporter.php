@@ -33,8 +33,8 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		//Get group 
 
 		$field_name = "";		
-		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));
-		
+		$results = civicrm_api("CustomField","getsingle", array ('version' => '3', 'id' => $this->_fid));	
+
 		if(!isset($results["is_error"])){
 			$this->_ogid = $results["option_group_id"];
 		}
@@ -116,14 +116,14 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		return $defaults;
 	}
 
-	public function insertValue_customfield($value,$label,$weight){
+	public function insertValue_customfield($value,$label){
 					$params	= array(
 								'version'			=> 3,
 								'name'				=> strtolower(CRM_Utils_String::munge($label, '_', 64 )),
 								'label'				=> $label,
 								'value'				=> $value,
 								'option_group_id' 	=> $this->_ogid,
-								'weight'			=> ++$weight,
+								'weight'			=> ++$this->weight,
 					);
 					$result = civicrm_api( "OptionValue", "Create", $params);
 					$this->_lineCount++;
@@ -168,7 +168,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 		/* ToDo:
 			1. 	API doesn't sets the right weight if not passed in params. I get the last weight in the options. 
 		*/
-		$weight = 0;
+		$this->weight = 0;
 		$params = array (
 				'version' 			=> '3',
 				'option_group_id' 	=> $this->_ogid,
@@ -212,7 +212,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 
 			/*Not check*/
 			if ($override_import==self::NOT_CHECK) { 
-				$this->insertValue_customfield($value,$label,$weight);
+				$this->insertValue_customfield($value,$label);
 			}
 
 			/*Skip Option*/
@@ -227,7 +227,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 						}
 					}
 				if($notexist){
-					$this->insertValue_customfield($value,$label,$weight);
+					$this->insertValue_customfield($value,$label);
 				}
 			}
 
@@ -244,7 +244,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 					}
 				}			
 				if($notexist){
-					$this->insertValue_customfield($value,$label,$weight);
+					$this->insertValue_customfield($value,$label);
 				}
 			}
 		}
