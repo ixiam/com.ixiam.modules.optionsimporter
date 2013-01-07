@@ -219,7 +219,6 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form {
 			if ($override_import==self::SKIP_OPTION) {
 					$values_cutom_field=civicrm_api("OptionValue","get", array (version => '3','sequential' =>'1', 'option_group_id' =>$this->_ogid));
 					$notexist=true;
-					CRM_Core_Error::debug($values_cutom_field, $variable = null, $log = true, $html = true);
 					foreach ($values_cutom_field["values"] as $key => $value_comp) {
 						if($value_comp["value"]==$value){
 							$notexist=false;
