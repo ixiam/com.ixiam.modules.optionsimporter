@@ -6,4 +6,10 @@
     <title>Import Option Values</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/admin/custom/group/field/delete</path>
+    <page_callback>CRM_Optionsimporter_Page_DeleteImporter</page_callback>
+    <title>Delete Option Values</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>  
 </menu>

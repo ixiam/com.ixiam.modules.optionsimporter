@@ -8,13 +8,13 @@
     <author>Luciano Spiegel</author>
     <email>l.spiegel@ixiam.com</email>
   </maintainer>
-  <releaseDate>2012-10-18</releaseDate>
-  <version>0.1</version>
-  <develStage>alpha</develStage>
+  <releaseDate>2013-08-30</releaseDate>
+  <version>1.0</version>
+  <develStage>stable</develStage>
   <compatibility>
-    <ver>4.2</ver>
+    <ver>4.2 4.3</ver>
   </compatibility>
-  <comments>CiviCRM Extension to add Import Feature for Option Values in Custom Fields</comments>
+  <comments>CiviCRM Extension to add CSV Import Feature for Option Values in Custom Fields</comments>
   <civix>
     <namespace>CRM/Optionsimporter</namespace>
   </civix>
