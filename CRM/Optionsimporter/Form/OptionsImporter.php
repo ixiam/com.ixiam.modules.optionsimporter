@@ -29,7 +29,6 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
    */
   function buildQuickForm()
   {
-    civicrm_initialize();
     $this->_fid = CRM_Utils_Request::retrieve('fid', 'Positive', $this);
     $this->_gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this);
     
@@ -142,8 +141,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
       'option_group_id' => $this->_ogid,
       'weight' => ++$this->weight
     );
-    $result = civicrm_api("OptionValue", "Create", $params);
-    $this->_lineCount++;
+    $result = civicrm_api("OptionValue", "Create", $params);    
   }
   
   /**
@@ -154,7 +152,6 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
    */
   public function postProcess()
   {    
-    civicrm_initialize();
     require_once 'CRM/Utils/String.php';
     
     $skipColumnHeader = $this->controller->exportValue($this->_name, 'skipColumnHeader');
@@ -162,7 +159,9 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
     $colOrder         = $this->controller->exportValue($this->_name, 'colOrder');
     $fileName         = $this->controller->exportValue($this->_name, 'uploadFile');
     $textEnclosure    = $this->controller->exportValue($this->_name, 'textEnclosure');
-    $override_import  = $this->controller->exportValue($this->_name, 'overrideimport');    
+    $override_import  = $this->controller->exportValue($this->_name, 'overrideimport');
+    $lineCount        = 0;
+    $lineUpdate       = 0;
     
     if(empty($separator)) {
       $config    = CRM_Core_Config::singleton();
@@ -176,7 +175,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
     
     $fd = fopen($fileName, "r");
     if(!$fd) {
-      CRM_Core_Error::fatal();
+      CRM_Core_Error::fatal(ts("File coudln't be opened"));
       return FALSE;
     }
     
@@ -226,16 +225,17 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
       /*Not check*/
       if($override_import == self::NOT_CHECK) {
         $this->insertValue_customfield($value, $label);
+        $lineCount++;
       }
       
       /*Skip Option*/
       if($override_import == self::SKIP_OPTION) {
         $values_cutom_field = civicrm_api("OptionValue", "get", array(
-          version => '3',
+          'version' => '3',
           'sequential' => '1',
           'option_group_id' => $this->_ogid
         ));
-        $notexist           = true;
+        $notexist = true;
         foreach($values_cutom_field["values"] as $key => $value_comp) {
           if($value_comp["value"] == $value) {
             $notexist = false;
@@ -244,6 +244,7 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
         }
         if($notexist) {
           $this->insertValue_customfield($value, $label);
+          $lineCount++;
         }
       }
       
@@ -264,23 +265,19 @@ class CRM_Optionsimporter_Form_OptionsImporter extends CRM_Core_Form
               'label' => $label
             ));
             $notexist = false;
-            $this->_lineUpdate++;
+            $lineUpdate++;
             break;
           }
         }
         if($notexist) {
           $this->insertValue_customfield($value, $label);
+          $lineCount++;
         }
       }
     }
     fclose($fd);
     
-    /* ToDo:
-    4. Would be nice to display a summary page here, right?
-    */
-    $this->_lineCount  = ($this->_lineCount == NULL) ? 0 : $this->_lineCount;
-    $this->_lineUpdate = ($this->_lineUpdate == NULL) ? 0 : $this->_lineUpdate;
-    $statusMsg         = "Options Inserted:" . $this->_lineCount . ", Options Updated:" . $this->_lineUpdate;
+    $statusMsg = "Options Inserted:" . $lineCount . "\n Options Updated:" . $lineUpdate;
     CRM_Core_Session::setStatus($statusMsg, false);
     CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/custom/group/field/option', "reset=1&action=browse&gid=" . $this->_gid . "&fid=" . $this->_fid));
   }

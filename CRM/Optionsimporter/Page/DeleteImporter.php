@@ -10,11 +10,8 @@ class CRM_Optionsimporter_Page_DeleteImporter extends CRM_Core_Page
   
   function run()
   {
-    civicrm_initialize();
     $this->_fid = CRM_Utils_Request::retrieve('fid', 'Positive', $this);
     $this->_gid = CRM_Utils_Request::retrieve('gid', 'Positive', $this);
-    
-    //Get group 
     
     $field_name = "";
     $results    = civicrm_api("CustomField", "getsingle", array(
@@ -45,7 +42,8 @@ class CRM_Optionsimporter_Page_DeleteImporter extends CRM_Core_Page
     $values_field = civicrm_api("OptionValue", "get", array(
       'version' => '3',
       'sequential' => '1',
-      'option_group_id' => $results["option_group_id"]
+      'option_group_id' => $results["option_group_id"],
+      'option.limit' => 100, // We want to delete more than 100 options ?? (=> 0 , no limit, doesn't seems to work)
     ));
     $number_elements_deleted     = 0;
     $number_elements_not_deleted = 0;
@@ -53,7 +51,6 @@ class CRM_Optionsimporter_Page_DeleteImporter extends CRM_Core_Page
     $value_not_deleted           = array();
     
     foreach($values_field['values'] as $key => $value) {
-      //CRM_Core_Error::debug($value, $variable = null, $log = true, $html = true);      
       $results_error = civicrm_api("OptionValue", "delete", array(
         'version' => '3',
         'sequential' => '1',
@@ -73,7 +70,8 @@ class CRM_Optionsimporter_Page_DeleteImporter extends CRM_Core_Page
     $this->assign('number_elements_deleted', $number_elements_deleted);
     $this->assign('number_elements_not_deleted', $number_elements_not_deleted);
     
-    parent::run();
+    $statusMsg = "Options Deleted:" . $number_elements_deleted . ", Options Not Deleted:" . $number_elements_not_deleted;
     CRM_Core_Session::setStatus($statusMsg, false);
+    parent::run();    
   }  
 }

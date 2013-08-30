@@ -39,15 +39,16 @@
 {literal}
 <script type="text/javascript">   
 cj(document).ready(function(){
-  cj('form:[name="OptionsImporter"]').submit(function(){
+  cj('#OptionsImporter').submit(function(){
     if(cj('input[id="uploadFile"]').val() == ""){
       {/literal}
       alert("{ts}You haven't selected any file to import.{/ts}");
       {literal}
       return false;
     }
+    else
     {/literal}
-    return confirm("{ts}You are going to import the file into option values.\n\nAre you sure to proceed?{/ts}");
+      return confirm("{ts}You are going to import the file into option values.\n\nAre you sure to proceed?{/ts}");
     {literal}
   });
 });
